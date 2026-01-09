@@ -17,7 +17,7 @@
     #wrap{position:fixed;inset:0}
     canvas{display:block;width:100%;height:100%}
 
-    /* HUD */
+    /* Büyük HUD (sadece menu & pause) */
     #hud{
       position:absolute;top:12px;left:12px;z-index:50;
       display:flex;gap:10px;flex-wrap:wrap;
@@ -56,10 +56,40 @@
     #chip .name{font-weight:950;font-size:13px;letter-spacing:.5px}
     #chip .desc{font-size:11px;opacity:.82;margin-top:2px}
 
+    /* Küçük HUD (sadece oyunda) */
+    #mini_hud{
+      position:absolute;
+      top:10px;
+      left:10px;
+      z-index:40;
+      padding:4px 8px;
+      border-radius:999px;
+      background:rgba(0,0,0,.6);
+      border:1px solid rgba(255,255,255,.14);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      font-size:11px;
+    }
+    .mini-item{
+      display:flex;
+      gap:3px;
+      align-items:baseline;
+    }
+    .mini-item .label{
+      font-size:9px;
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      opacity:.7;
+    }
+    .mini-item .value{
+      font-weight:800;
+    }
+
     /* Alt kontrol barı: [ECHO] [D-PAD] [DUR] */
     #controls{
       position:absolute;
-      bottom:24px;
+      bottom:64px;
       left:50%;
       transform:translateX(-50%);
       z-index:55;
@@ -67,6 +97,17 @@
       align-items:flex-end;
       gap:18px;
     }
+    .ctrl-col{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:4px;
+    }
+    .ctrl-label{
+      font-size:11px;
+      opacity:.82;
+    }
+
     .btn{
       width:72px;height:72px;border-radius:50%;
       background:rgba(255,255,255,.08);
@@ -186,18 +227,13 @@
       border:1px solid rgba(255,255,255,.18);
       background:rgba(0,0,0,.35);
     }
-
-    .txt-small{
-      font-size:11px;
-      opacity:.78;
-      margin-top:8px;
-    }
   </style>
 </head>
 <body>
 <div id="wrap">
   <canvas id="c"></canvas>
 
+  <!-- Büyük HUD -->
   <div id="hud">
     <div class="stat"><div class="k">skor</div><div class="v" id="ui_score">0</div></div>
     <div class="stat"><div class="k">best</div><div class="v" id="ui_best">0</div></div>
@@ -213,13 +249,23 @@
     <div class="desc" id="ui_hint">bölüm 1 • klasik</div>
   </div>
 
+  <!-- Küçük HUD -->
+  <div id="mini_hud">
+    <div class="mini-item"><span class="label">SKR</span><span class="value" id="mini_score">0</span></div>
+    <div class="mini-item"><span class="label">CAN</span><span class="value" id="mini_life">3</span></div>
+    <div class="mini-item"><span class="label">BLM</span><span class="value" id="mini_level">1</span></div>
+  </div>
+
   <div id="tip"></div>
 
   <!-- Alt kontrol barı -->
   <div id="controls">
-    <div class="btn" id="btn_echo">
-      ECHO
-      <div class="small" id="btn_echo_small">hazır</div>
+    <div class="ctrl-col">
+      <div class="ctrl-label" id="echo_label">echo hak: 3</div>
+      <div class="btn" id="btn_echo">
+        ECHO
+        <div class="small" id="btn_echo_small">hazır</div>
+      </div>
     </div>
 
     <div id="dpad">
@@ -235,12 +281,16 @@
       </div>
     </div>
 
-    <div class="btn" id="btn_pause">
-      DUR
-      <div class="small">pause</div>
+    <div class="ctrl-col">
+      <div class="ctrl-label">pause</div>
+      <div class="btn" id="btn_pause">
+        DUR
+        <div class="small">pause</div>
+      </div>
     </div>
   </div>
 
+  <!-- Menü -->
   <div class="modal" id="menu">
     <div class="card">
       <div class="title">SnakePlay • Viper's Legacy</div>
@@ -278,6 +328,7 @@
     </div>
   </div>
 
+  <!-- Game Over -->
   <div class="modal" id="over" style="display:none">
     <div class="card">
       <div class="title">Oyun bitti</div>
@@ -308,6 +359,13 @@
     hint: document.getElementById('ui_hint'),
   };
 
+  const miniScore = document.getElementById('mini_score');
+  const miniLife  = document.getElementById('mini_life');
+  const miniLevel = document.getElementById('mini_level');
+  const miniHud   = document.getElementById('mini_hud');
+
+  const echoLabel = document.getElementById('echo_label');
+
   const tipEl = document.getElementById('tip');
   const menuEl = document.getElementById('menu');
   const overEl = document.getElementById('over');
@@ -316,6 +374,9 @@
   const btnEchoSmall = document.getElementById('btn_echo_small');
   const btnPause = document.getElementById('btn_pause');
   const dpadKeys = document.querySelectorAll('.dkey');
+
+  const hudEl  = document.getElementById('hud');
+  const chipEl = document.getElementById('chip');
 
   const BEST_KEY = 'viper_classic_best_v2_green_levels';
 
@@ -333,6 +394,24 @@
   const key=(x,y)=>x+'|'+y;
   const toPx=(cell)=>({ x: OFFX + cell.x*CELL + CELL/2, y: OFFY + cell.y*CELL + CELL/2 });
 
+  let state = 'menu';
+
+  function refreshHudVisibility(){
+    if (state === 'run'){
+      hudEl.style.display = 'none';
+      chipEl.style.display = 'none';
+      miniHud.style.display = 'flex';
+    } else if (state === 'menu' || state === 'pause'){
+      hudEl.style.display = 'flex';
+      chipEl.style.display = 'block';
+      miniHud.style.display = 'none';
+    } else { // over
+      hudEl.style.display = 'none';
+      chipEl.style.display = 'none';
+      miniHud.style.display = 'none';
+    }
+  }
+
   function resize(){
     DPR = window.devicePixelRatio || 1;
     const r = canvas.getBoundingClientRect();
@@ -342,10 +421,9 @@
     canvas.height = Math.floor(H * DPR);
     ctx.setTransform(DPR,0,0,DPR,0,0);
 
-    // Üstte Telegram + HUD, altta kontrol barı için boşluk
     const sidePad = 28;
-    const topPad = 140;
-    const bottomPad = 240;
+    const topPad = 130;
+    const bottomPad = 210;
 
     const availW = Math.max(200, W - sidePad*2);
     const availH = Math.max(200, H - topPad - bottomPad);
@@ -370,7 +448,6 @@
     }
   }
 
-  let state = 'menu';
   let mode = 'casual';
 
   let score = 0;
@@ -505,6 +582,12 @@
     ui.echo.textContent = echoCharges;
     ui.lvl.textContent = level;
 
+    if (miniScore) miniScore.textContent = score;
+    if (miniLife)  miniLife.textContent  = lives;
+    if (miniLevel) miniLevel.textContent = level;
+
+    if (echoLabel) echoLabel.textContent = `echo hak: ${echoCharges}`;
+
     ui.mode.textContent = (mode==='classic') ? 'CLASSIC' : 'CASUAL';
     let extra = `bölüm ${level} • ${levelTheme()}`;
     if (portalMode === 'h') extra += ' • portal: sağ-sol';
@@ -630,6 +713,7 @@
 
   function gameOver(reason){
     state = 'over';
+    refreshHudVisibility();
     overEl.style.display = 'flex';
     const best = Math.max(bestGet(), score);
     bestSet(best);
@@ -669,7 +753,6 @@
       return;
     }
 
-    // Can gidince aynı uzunlukla yeniden doğ (çok uzun ise tablaya sığacak kadar kısalt)
     const cx = Math.floor(COLS/2);
     const cy = Math.floor(ROWS/2);
 
@@ -741,6 +824,7 @@
   function start(modeName){
     mode = modeName;
     state = 'run';
+    refreshHudVisibility();
     menuEl.style.display = 'none';
     overEl.style.display = 'none';
     resetRun();
@@ -749,10 +833,12 @@
   function togglePause(){
     if (state === 'run'){
       state = 'pause';
+      refreshHudVisibility();
       btnPause.classList.add('active');
       showTip('duraklatıldı\nP veya DUR', 999);
     } else if (state === 'pause'){
       state = 'run';
+      refreshHudVisibility();
       btnPause.classList.remove('active');
       tipEl.style.display = 'none';
     }
@@ -1053,7 +1139,7 @@
 
   canvas.addEventListener('touchend', () => { touchStart = null; }, {passive:false});
 
-  // Mobil yön tuş takımı (▲ ◀ ▼ ▶)
+  // Mobil yön tuş takımı
   dpadKeys.forEach(btn => {
     const dirName = btn.dataset.dir;
     btn.addEventListener('pointerdown', (e) => {
@@ -1094,6 +1180,7 @@
     resize();
     resetRun();
     state = 'menu';
+    refreshHudVisibility();
     menuEl.style.display = 'flex';
     requestAnimationFrame(loop);
   }
