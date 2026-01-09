@@ -56,39 +56,34 @@
     #chip .name{font-weight:950;font-size:13px;letter-spacing:.5px}
     #chip .desc{font-size:11px;opacity:.82;margin-top:2px}
 
-    /* Echo + Pause butonları – mobilde sağ alt */
-    #btns{
+    /* Alt kontrol barı: [ECHO] [D-PAD] [DUR] */
+    #controls{
       position:absolute;
       bottom:24px;
-      right:16px;
-      left:auto;
-      transform:none;
+      left:50%;
+      transform:translateX(-50%);
       z-index:55;
       display:flex;
-      gap:12px;
-      align-items:center;
+      align-items:flex-end;
+      gap:18px;
     }
     .btn{
-      width:68px;height:68px;border-radius:50%;
+      width:72px;height:72px;border-radius:50%;
       background:rgba(255,255,255,.08);
       border:2px solid rgba(255,255,255,.16);
       color:#e6edf3;
       display:flex;flex-direction:column;align-items:center;justify-content:center;
       user-select:none;
       font-weight:900;
-      letter-spacing:.8px;
-      font-size:12px;
+      letter-spacing:.6px;
+      font-size:11px;
     }
     .btn .small{font-size:10px;font-weight:800;opacity:.85;margin-top:4px;letter-spacing:.4px}
     .btn.active{background:rgba(100,200,255,.22);border-color:rgba(100,200,255,.75)}
     .btn.cd{background:rgba(255,70,70,.18);border-color:rgba(255,70,70,.55)}
 
-    /* Mobil yön tuş takımı – sol alt */
+    /* Mobil yön tuş takımı – ortada */
     #dpad{
-      position:absolute;
-      bottom:24px;
-      left:16px;
-      z-index:56;
       display:flex;
       flex-direction:column;
       gap:6px;
@@ -98,16 +93,20 @@
       justify-content:center;
       gap:6px;
     }
+    .dspacer{
+      width:68px;
+      height:68px;
+    }
     .dkey{
-      width:58px;
-      height:58px;
-      border-radius:20px;
+      width:68px;
+      height:68px;
+      border-radius:22px;
       border:1px solid rgba(255,255,255,.18);
       background:rgba(255,255,255,.06);
       display:flex;
       align-items:center;
       justify-content:center;
-      font-size:20px;
+      font-size:22px;
       font-weight:900;
       color:#e6edf3;
       user-select:none;
@@ -118,27 +117,59 @@
     }
 
     @media (min-width: 900px){
-      #btns{display:none}
-      #dpad{display:none}
+      #controls{display:none}
     }
 
     .modal{position:absolute;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.78)}
     .card{
       width:min(560px,92vw);
       border-radius:18px;
-      padding:20px;
+      padding:20px 20px 18px;
       background:rgba(14,18,26,.96);
       border:1px solid rgba(100,200,255,.28);
       box-shadow:0 20px 60px rgba(0,0,0,.55);
-      text-align:center;
+      text-align:left;
     }
-    .title{font-weight:1000;font-size:22px;letter-spacing:.5px;color:#64c8ff;margin-bottom:10px}
-    .txt{font-size:13px;line-height:1.55;opacity:.92;margin-bottom:14px}
-    .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+    .title{
+      font-weight:1000;
+      font-size:20px;
+      letter-spacing:.4px;
+      color:#64c8ff;
+      margin-bottom:4px
+    }
+    .subtitle{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.18em;
+      opacity:.78;
+      margin-bottom:10px;
+    }
+    .section-title{
+      font-size:12px;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      opacity:.9;
+      margin:10px 0 4px;
+    }
+    .section-body{
+      font-size:12px;
+      line-height:1.55;
+      opacity:.92;
+    }
+    .section-body b{font-weight:800}
+    .row{
+      display:flex;
+      gap:10px;
+      justify-content:flex-start;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
     button.action{
       border:0;cursor:pointer;border-radius:12px;padding:12px 16px;
       font-weight:950;color:#fff;
-      background:linear-gradient(135deg,#64c8ff,#3a7bd5)
+      background:linear-gradient(135deg,#64c8ff,#3a7bd5);
+      font-size:13px;
     }
     button.ghost{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
     .pill{
@@ -147,13 +178,19 @@
       border:1px solid rgba(255,255,255,.14);
       background:rgba(255,255,255,.06);
       font-size:12px;opacity:.92;
-      margin:8px 6px 0;
+      margin:8px 6px 0 0;
     }
     .kbd{
       font-weight:950;
       padding:2px 8px;border-radius:8px;
       border:1px solid rgba(255,255,255,.18);
       background:rgba(0,0,0,.35);
+    }
+
+    .txt-small{
+      font-size:11px;
+      opacity:.78;
+      margin-top:8px;
     }
   </style>
 </head>
@@ -178,64 +215,77 @@
 
   <div id="tip"></div>
 
-  <!-- Echo + Pause -->
-  <div id="btns">
+  <!-- Alt kontrol barı -->
+  <div id="controls">
     <div class="btn" id="btn_echo">
       ECHO
       <div class="small" id="btn_echo_small">hazır</div>
     </div>
+
+    <div id="dpad">
+      <div class="drow">
+        <div class="dspacer"></div>
+        <div class="dkey" data-dir="up">▲</div>
+        <div class="dspacer"></div>
+      </div>
+      <div class="drow">
+        <div class="dkey" data-dir="left">◀</div>
+        <div class="dkey" data-dir="down">▼</div>
+        <div class="dkey" data-dir="right">▶</div>
+      </div>
+    </div>
+
     <div class="btn" id="btn_pause">
       DUR
       <div class="small">pause</div>
     </div>
   </div>
 
-  <!-- Mobil yön tuş takımı -->
-  <div id="dpad">
-    <div class="drow">
-      <div style="width:58px;height:58px"></div>
-      <div class="dkey" data-dir="up">▲</div>
-      <div style="width:58px;height:58px"></div>
-    </div>
-    <div class="drow">
-      <div class="dkey" data-dir="left">◀</div>
-      <div class="dkey" data-dir="down">▼</div>
-      <div class="dkey" data-dir="right">▶</div>
-    </div>
-  </div>
-
   <div class="modal" id="menu">
     <div class="card">
-      <div class="title">VIPER'S LEGACY – CLASSIC+ v2</div>
-      <div class="txt">
-        yeşil snake + bölüm sistemi + parkur + portal duvarlar
-        <br><br>
-        <span class="pill"><span class="kbd">↑↓←→</span> yön</span>
-        <span class="pill"><span class="kbd">WASD</span> yön</span>
-        <span class="pill"><span class="kbd">Space</span> echo</span>
-        <span class="pill"><span class="kbd">P</span> pause</span>
-        <br><br>
-        <b>echo</b> (space) son anı geri sarar ve kurtarır<br>
-        <b>mavi orb</b> yersen echo +1 (maks 3)
-        <br><br>
-        mobilde: ekranı kaydırarak <b>veya</b> alttaki yön tuşlarıyla oynayabilirsin<br>
-        çift dokunma = echo
+      <div class="title">SnakePlay • Viper's Legacy</div>
+      <div class="subtitle">mini oyun • test sürümü</div>
+
+      <div class="section-title">Nasıl oynanır?</div>
+      <div class="section-body">
+        • Amaç: engellere çarpmadan mümkün olan en yüksek skoru yapmak.<br>
+        • Sarı yem: +10 skor ve yılan uzar.<br>
+        • Mavi orb: +25 skor ve <b>echo</b> hakkı +1 (maks. 3).<br>
+        • Bölüm ilerledikçe parkur ve portal duvarlar zorlaşır.
       </div>
+
+      <div class="section-title">Kontroller</div>
+      <div class="section-body">
+        Masaüstü:<br>
+        • <b>Yön</b>: <span class="kbd">↑↓←→</span> veya <span class="kbd">WASD</span><br>
+        • <b>Echo</b>: <span class="kbd">Space</span><br>
+        • <b>Duraklat</b>: <span class="kbd">P</span><br><br>
+        Mobil:<br>
+        • Ekranı kaydırarak <b>veya</b> alttaki yön tuşlarını kullanarak oynayabilirsin.<br>
+        • Ekrana çift dokunma: <b>echo</b> (geri sarma).
+      </div>
+
+      <div class="pill">
+        <span class="kbd">Local Best</span>
+        skorların şu an sadece bu cihazda tutulur – mini app lider tahtası entegrasyonu sonradan açılacak
+      </div>
+
       <div class="row">
-        <button class="action" id="btn_casual">casual (3 can)</button>
-        <button class="action ghost" id="btn_classic">classic (1 can)</button>
-        <button class="action ghost" id="btn_how">kısa ipucu</button>
+        <button class="action" id="btn_casual">Casual (3 can)</button>
+        <button class="action ghost" id="btn_classic">Classic (1 can)</button>
+        <button class="action ghost" id="btn_how">Kısa ipucu</button>
       </div>
     </div>
   </div>
 
   <div class="modal" id="over" style="display:none">
     <div class="card">
-      <div class="title">GAME OVER</div>
-      <div class="txt" id="over_txt"></div>
+      <div class="title">Oyun bitti</div>
+      <div class="subtitle">tur özeti</div>
+      <div class="section-body" id="over_txt"></div>
       <div class="row">
-        <button class="action" id="btn_retry">tekrar</button>
-        <button class="action ghost" id="btn_share">paylaş</button>
+        <button class="action" id="btn_retry">Tekrar oyna</button>
+        <button class="action ghost" id="btn_share">Skoru paylaş</button>
       </div>
     </div>
   </div>
@@ -292,10 +342,10 @@
     canvas.height = Math.floor(H * DPR);
     ctx.setTransform(DPR,0,0,DPR,0,0);
 
-    // Üstte HUD + Telegram bar, altta tuşlar için ekstra boşluk
+    // Üstte Telegram + HUD, altta kontrol barı için boşluk
     const sidePad = 28;
     const topPad = 140;
-    const bottomPad = 210;
+    const bottomPad = 240;
 
     const availW = Math.max(200, W - sidePad*2);
     const availH = Math.max(200, H - topPad - bottomPad);
@@ -583,7 +633,26 @@
     overEl.style.display = 'flex';
     const best = Math.max(bestGet(), score);
     bestSet(best);
-    overTxt.textContent = `sebep: ${reason}\nskor: ${score}\nuzunluk: ${snake.length}\nbölüm: ${level}\nbest: ${best}`;
+
+    const payload = {
+      reason,
+      score,
+      best,
+      length: snake.length,
+      level,
+      mode,
+      timestamp: Date.now()
+    };
+
+    overTxt.textContent =
+      `Sebep: ${reason}\n` +
+      `Skor: ${score}\n` +
+      `Uzunluk: ${snake.length}\n` +
+      `Bölüm: ${level}\n` +
+      `Best: ${best}`;
+
+    window.SNAKE_RESULT = payload;
+    try{ console.log('[SnakePlay] result', payload); }catch(_){}
   }
 
   function onCrash(reason){
@@ -681,7 +750,7 @@
     if (state === 'run'){
       state = 'pause';
       btnPause.classList.add('active');
-      showTip('duraklatıldı\nP ya da DUR', 999);
+      showTip('duraklatıldı\nP veya DUR', 999);
     } else if (state === 'pause'){
       state = 'run';
       btnPause.classList.remove('active');
