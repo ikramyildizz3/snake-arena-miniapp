@@ -457,8 +457,7 @@
     let tickInterval = SPEEDS[0];
     let isPaused = false;
     let gameOver = false;
-
-    let loopId = null; // setInterval id
+    let mainLoopId = null;
 
     const directions = {
       up: { x: 0, y: -1 },
@@ -585,13 +584,11 @@
       }
     }
 
-    function startLoop() {
-      if (loopId) clearInterval(loopId);
-      loopId = setInterval(() => {
-        if (!gameOver) {
-          step();
-          draw();
-        }
+    function startMainLoop() {
+      if (mainLoopId) clearInterval(mainLoopId);
+      mainLoopId = setInterval(() => {
+        step();
+        draw();
       }, tickInterval);
     }
 
@@ -601,15 +598,14 @@
       levelIndex = 0;
       tickInterval = SPEEDS[0];
       gameOver = false;
-      isPaused = false;
       echoCharges = 3;
       foodEatenThisLevel = 0;
+      isPaused = false;
       resetSnake();
       spawnFood();
       updateHud();
-      draw();
-      startLoop();
       showToast("Hazırsın – iyi oyunlar!");
+      startMainLoop();
     }
 
     function loseLife() {
@@ -618,7 +614,6 @@
         gameOver = true;
         lives = 0;
         updateHud();
-        if (loopId) clearInterval(loopId);
         showToast("Game over – R ile yeniden başla");
         return;
       }
@@ -641,19 +636,18 @@
         showToast("Arena ustası! Aynı bölümde devam");
       }
       updateHud();
-      draw();
-      startLoop();
+      startMainLoop(); // hız değişince loop'u yenile
     }
 
     function updateHud() {
-      hudScore.textContent = score;
-      hudBest.textContent = bestScore;
-      hudLength.textContent = snake.length;
+      if (hudScore) hudScore.textContent = score;
+      if (hudBest) hudBest.textContent = bestScore;
+      if (hudLength) hudLength.textContent = snake.length;
       const speedMult = (SPEEDS[0] / tickInterval).toFixed(1);
-      hudSpeed.textContent = `x${speedMult}`;
-      hudEcho.textContent = echoCharges;
-      hudLives.textContent = lives;
-      hudLevel.textContent = levelIndex + 1;
+      if (hudSpeed) hudSpeed.textContent = `x${speedMult}`;
+      if (hudEcho) hudEcho.textContent = echoCharges;
+      if (hudLives) hudLives.textContent = lives;
+      if (hudLevel) hudLevel.textContent = levelIndex + 1;
       if (echoBadgeMobile) echoBadgeMobile.textContent = `${echoCharges} hak`;
       if (pauseBadgeMobile) pauseBadgeMobile.textContent = isPaused ? "duraklatıldı" : "oyunda";
     }
@@ -689,7 +683,9 @@
     function togglePause() {
       if (gameOver) return;
       isPaused = !isPaused;
-      if (pauseBadgeMobile) pauseBadgeMobile.textContent = isPaused ? "duraklatıldı" : "oyunda";
+      if (pauseBadgeMobile) {
+        pauseBadgeMobile.textContent = isPaused ? "duraklatıldı" : "oyunda";
+      }
       showToast(isPaused ? "Oyun durduruldu" : "Devam");
     }
 
@@ -748,6 +744,7 @@
         spawnFood();
         if (foodEatenThisLevel >= LEVELS[levelIndex].neededFood) {
           nextLevel();
+          return; // nextLevel içinde spawn + reset yapıldı
         }
       } else {
         snake.pop();
