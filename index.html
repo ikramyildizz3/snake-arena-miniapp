@@ -17,7 +17,7 @@
     #wrap{position:fixed;inset:0}
     canvas{display:block;width:100%;height:100%}
 
-    /* Büyük HUD (menu & pause) */
+    /* Büyük HUD – sadece menü/pause'da görünür */
     #hud{
       position:absolute;top:12px;left:12px;z-index:50;
       display:flex;gap:10px;flex-wrap:wrap;
@@ -30,21 +30,6 @@
     .k{font-size:11px;opacity:.75;letter-spacing:.6px;text-transform:uppercase}
     .v{font-size:18px;font-weight:950;margin-top:2px}
 
-    #tip{
-      position:absolute;top:92px;left:50%;transform:translateX(-50%);
-      z-index:60;
-      max-width:min(720px,92vw);
-      padding:10px 12px;border-radius:14px;
-      background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);
-      backdrop-filter:blur(8px);
-      font-size:13px;line-height:1.35;
-      text-align:center;
-      white-space:pre-line;
-      opacity:.95;
-      pointer-events:none;
-      display:none;
-    }
-
     #chip{
       position:absolute;top:12px;right:12px;z-index:50;
       padding:10px 12px;border-radius:14px;
@@ -56,7 +41,7 @@
     #chip .name{font-weight:950;font-size:13px;letter-spacing:.5px}
     #chip .desc{font-size:11px;opacity:.82;margin-top:2px}
 
-    /* Küçük HUD (sadece oyunda) */
+    /* Küçük HUD – sadece oyunda görünür */
     #mini_hud{
       position:absolute;
       top:10px;
@@ -86,6 +71,21 @@
       font-weight:800;
     }
 
+    #tip{
+      position:absolute;top:92px;left:50%;transform:translateX(-50%);
+      z-index:60;
+      max-width:min(720px,92vw);
+      padding:10px 12px;border-radius:14px;
+      background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);
+      backdrop-filter:blur(8px);
+      font-size:13px;line-height:1.35;
+      text-align:center;
+      white-space:pre-line;
+      opacity:.95;
+      pointer-events:none;
+      display:none;
+    }
+
     /* Alt kontrol barı: [ECHO] [D-PAD] [DUR] */
     #controls{
       position:absolute;
@@ -109,7 +109,7 @@
     }
 
     .btn{
-      width:68px;height:68px;border-radius:50%;
+      width:64px;height:64px;border-radius:50%;
       background:rgba(255,255,255,.08);
       border:2px solid rgba(255,255,255,.16);
       color:#e6edf3;
@@ -123,7 +123,7 @@
     .btn.active{background:rgba(100,200,255,.22);border-color:rgba(100,200,255,.75)}
     .btn.cd{background:rgba(255,70,70,.18);border-color:rgba(255,70,70,.55)}
 
-    /* Mobil yön tuş takımı – 3 satır, daha büyük */
+    /* Mobil yön tuş takımı – 3 satır, büyük */
     #dpad{
       display:flex;
       flex-direction:column;
@@ -400,6 +400,42 @@
   const toPx=(cell)=>({ x: OFFX + cell.x*CELL + CELL/2, y: OFFY + cell.y*CELL + CELL/2 });
 
   let state = 'menu';
+  let mode  = 'casual';
+
+  let score = 0;
+  let lives = 3;
+
+  let level = 1;
+  let nextLevelAt = 80;
+  let portalMode = 'none';
+  let obstacles = new Set();
+
+  let snake = [];
+  let dir = {x:1,y:0};
+  let nextDir = {x:1,y:0};
+  let grow = 0;
+
+  let baseMps = 6.0;
+  let mps = 6.0;
+
+  let food = null;
+  let orb  = null;
+  let orbTimer = 0;
+
+  let echoCharges = 3;
+  const echoMax = 3;
+  const echoCd  = 1.2;
+  let echoCdLeft = 0;
+
+  const history = [];
+  const HISTORY_MAX = 210;
+
+  let iFrames = 0;
+  let acc = 0;
+  let echoPulse = 0;
+  let tipUntil = 0;
+
+  function pulseEcho(){ echoPulse = 1.0; }
 
   function refreshHudVisibility(){
     if (state === 'run'){
@@ -427,13 +463,12 @@
     ctx.setTransform(DPR,0,0,DPR,0,0);
 
     const sidePad = 28;
-    const topPad = 70;   // sahayı yukarı çektik
-    const bottomPad = 260; // kontroller için pay
+    const topPad = 70;
+    const bottomPad = 260;
 
     const availW = Math.max(200, W - sidePad*2);
     const availH = Math.max(200, H - topPad - bottomPad);
 
-    // Tahta yüksekliği, genişliğin ~1.4 katını geçmesin
     const baseCell = (availW < 480) ? 16 : 20;
     CELL = baseCell;
 
@@ -445,58 +480,21 @@
     const boardH = ROWS * CELL;
 
     OFFX = Math.floor((W - boardW)/2);
-    OFFY = topPad + Math.floor((availH - boardH)*0.05); // hafif aşağı offset
+    OFFY = topPad + Math.floor((availH - boardH)*0.05);
 
     if (state !== 'menu'){
       snake.forEach(s => { s.x = clamp(s.x, 0, COLS-1); s.y = clamp(s.y, 0, ROWS-1); });
       if (food) { food.x = clamp(food.x, 0, COLS-1); food.y = clamp(food.y, 0, ROWS-1); }
-      if (orb)  { orb.x  = clamp(orb.x,  0, COLS-1);  orb.y  = clamp(orb.y,  0, ROWS-1); }
+      if (orb)  { orb.x  = clamp(orb.x,  0, COLS-1);  orb.y  = clamp(orb.y,  ROWS-1); }
       rebuildObstaclesForLevel();
     }
   }
-
-  let mode = 'casual';
-
-  let score = 0;
-  let lives = 3;
-
-  let level = 1;
-  let nextLevelAt = 80;
-  let portalMode = 'none'; // none | h | all
-  let obstacles = new Set();
-
-  let snake = [];
-  let dir = {x:1,y:0};
-  let nextDir = {x:1,y:0};
-  let grow = 0;
-
-  let baseMps = 6.0;
-  let mps = 6.0;
-
-  let food = null;
-  let orb = null;
-  let orbTimer = 0;
-
-  let echoCharges = 3;
-  const echoMax = 3;
-  const echoCd = 1.2;
-  let echoCdLeft = 0;
-
-  const history = [];
-  const HISTORY_MAX = 210;
-
-  let iFrames = 0;
-  let acc = 0;
-
-  let echoPulse = 0;
-  function pulseEcho(){ echoPulse = 1.0; }
 
   function showTip(text, seconds){
     tipEl.textContent = text;
     tipEl.style.display = 'block';
     tipUntil = performance.now() + (seconds||2.0)*1000;
   }
-  let tipUntil = 0;
   function tickTip(){
     if (tipEl.style.display === 'none') return;
     if (performance.now() > tipUntil) tipEl.style.display = 'none';
@@ -597,7 +595,7 @@
 
     ui.mode.textContent = (mode==='classic') ? 'CLASSIC' : 'CASUAL';
     let extra = `bölüm ${level} • ${levelTheme()}`;
-    if (portalMode === 'h') extra += ' • portal: sağ-sol';
+    if (portalMode === 'h')   extra += ' • portal: sağ-sol';
     if (portalMode === 'all') extra += ' • portal: tüm kenarlar';
     ui.hint.textContent = extra;
   }
@@ -606,9 +604,6 @@
     if (nx === -dir.x && ny === -dir.y) return;
     nextDir = {x:nx,y:ny};
   }
-
-  const history = [];
-  const HISTORY_MAX = 210;
 
   function pushHistory(){
     history.push({
@@ -635,9 +630,6 @@
     const idx = Math.max(0, history.length - 1 - steps);
     return history[idx];
   }
-
-  let echoPulse = 0;
-  function pulseEcho(){ echoPulse = 1.0; }
 
   function doEcho(){
     if (state !== 'run') return;
@@ -672,7 +664,7 @@
 
     rebuildObstaclesForLevel();
     if (food && obstacles.has(key(food.x, food.y))) food = spawnEmptyCell();
-    if (orb && obstacles.has(key(orb.x, orb.y))) orb = spawnEmptyCell();
+    if (orb && obstacles.has(key(orb.x, orb.y)))   orb = spawnEmptyCell();
 
     pulseEcho();
     showTip('echo\ngeri sardın', 0.8);
@@ -752,11 +744,6 @@
     try{ console.log('[SnakePlay] result', payload); }catch(_){}
   }
 
-  let baseMps = 6.0;
-  let mps = 6.0;
-  let iFrames = 0;
-  let acc = 0;
-
   function onCrash(reason){
     if (iFrames > 0) return;
 
@@ -775,7 +762,7 @@
     const cy = Math.floor(ROWS/2);
 
     const maxLen = Math.max(3, COLS - 4);
-    const keepLen = Math.min(snake.length, maxLen);
+    const keepLen = Math.min(Math.max(5, snake.length), maxLen);
 
     snake = [];
     const startX = Math.max(1, Math.min(COLS - keepLen - 1, cx - Math.floor(keepLen/2)));
@@ -789,7 +776,7 @@
 
     rebuildObstaclesForLevel();
     if (food && snake.some(s=>eq(s,food))) food = spawnEmptyCell();
-    if (orb && snake.some(s=>eq(s,orb))) orb = spawnEmptyCell();
+    if (orb && snake.some(s=>eq(s,orb)))   orb = spawnEmptyCell();
 
     history.length = 0;
     pushHistory();
@@ -797,10 +784,6 @@
     showTip('çarpışma\n1 can gitti', 1.0);
     updateUI();
   }
-
-  let food = null;
-  let orb = null;
-  let orbTimer = 0;
 
   function resetRun(){
     score = 0;
@@ -1078,12 +1061,11 @@
 
     if (state === 'run'){
       if (echoCdLeft > 0) echoCdLeft = Math.max(0, echoCdLeft - dt);
-      if (iFrames > 0) iFrames = Math.max(0, iFrames - dt);
-
-      const stepInterval = 1 / mps;
-      acc += dt;
+      if (iFrames > 0)   iFrames   = Math.max(0, iFrames   - dt);
 
       mps = baseMps + Math.min(2.7, (snake.length-5)*0.06) + Math.min(2.0, (level-1)*0.12);
+      const stepInterval = 1 / mps;
+      acc += dt;
 
       while (acc >= stepInterval){
         acc -= stepInterval;
