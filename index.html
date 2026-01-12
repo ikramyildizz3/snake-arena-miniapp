@@ -446,7 +446,7 @@
       hudEl.style.display = 'flex';
       chipEl.style.display = 'block';
       miniHud.style.display = 'none';
-    } else { // over
+    } else {
       hudEl.style.display = 'none';
       chipEl.style.display = 'none';
       miniHud.style.display = 'none';
@@ -463,8 +463,8 @@
     ctx.setTransform(DPR,0,0,DPR,0,0);
 
     const sidePad = 28;
-    const topPad = 70;
-    const bottomPad = 260;
+    const topPad = 60;   // ÖNCEKİNDEN BİRAZ DAHA YUKARIDA
+    const bottomPad = 340; // SAHAYI YUKARI ÇEKMEK İÇİN ARTTIRILDI
 
     const availW = Math.max(200, W - sidePad*2);
     const availH = Math.max(200, H - topPad - bottomPad);
