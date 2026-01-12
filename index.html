@@ -123,7 +123,7 @@
     .btn.active{background:rgba(100,200,255,.22);border-color:rgba(100,200,255,.75)}
     .btn.cd{background:rgba(255,70,70,.18);border-color:rgba(255,70,70,.55)}
 
-    /* Mobil yön tuş takımı – ortada */
+    /* Mobil yön tuş takımı – 3 satır */
     #dpad{
       display:flex;
       flex-direction:column;
@@ -276,8 +276,13 @@
       </div>
       <div class="drow">
         <div class="dkey" data-dir="left">◀</div>
-        <div class="dkey" data-dir="down">▼</div>
+        <div class="dspacer"></div>
         <div class="dkey" data-dir="right">▶</div>
+      </div>
+      <div class="drow">
+        <div class="dspacer"></div>
+        <div class="dkey" data-dir="down">▼</div>
+        <div class="dspacer"></div>
       </div>
     </div>
 
@@ -422,7 +427,7 @@
     ctx.setTransform(DPR,0,0,DPR,0,0);
 
     const sidePad = 28;
-    const topPad = 130;
+    const topPad = 105;    // daha yukarı ve daha büyük alan
     const bottomPad = 210;
 
     const availW = Math.max(200, W - sidePad*2);
@@ -438,7 +443,8 @@
     const boardH = ROWS * CELL;
 
     OFFX = Math.floor((W - boardW)/2);
-    OFFY = topPad + Math.floor((availH - boardH)/2);
+    // 0.3 ile hafif yukarı kaydır
+    OFFY = topPad + Math.floor((availH - boardH)*0.3);
 
     if (state !== 'menu'){
       snake.forEach(s => { s.x = clamp(s.x, 0, COLS-1); s.y = clamp(s.y, 0, ROWS-1); });
