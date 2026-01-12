@@ -17,7 +17,7 @@
     #wrap{position:fixed;inset:0}
     canvas{display:block;width:100%;height:100%}
 
-    /* Büyük HUD (sadece menu & pause) */
+    /* Büyük HUD (menu & pause) */
     #hud{
       position:absolute;top:12px;left:12px;z-index:50;
       display:flex;gap:10px;flex-wrap:wrap;
@@ -89,7 +89,7 @@
     /* Alt kontrol barı: [ECHO] [D-PAD] [DUR] */
     #controls{
       position:absolute;
-      bottom:64px;
+      bottom:60px;
       left:50%;
       transform:translateX(-50%);
       z-index:55;
@@ -109,7 +109,7 @@
     }
 
     .btn{
-      width:72px;height:72px;border-radius:50%;
+      width:68px;height:68px;border-radius:50%;
       background:rgba(255,255,255,.08);
       border:2px solid rgba(255,255,255,.16);
       color:#e6edf3;
@@ -123,7 +123,7 @@
     .btn.active{background:rgba(100,200,255,.22);border-color:rgba(100,200,255,.75)}
     .btn.cd{background:rgba(255,70,70,.18);border-color:rgba(255,70,70,.55)}
 
-    /* Mobil yön tuş takımı – 3 satır */
+    /* Mobil yön tuş takımı – 3 satır, daha büyük */
     #dpad{
       display:flex;
       flex-direction:column;
@@ -135,19 +135,19 @@
       gap:6px;
     }
     .dspacer{
-      width:68px;
-      height:68px;
+      width:80px;
+      height:80px;
     }
     .dkey{
-      width:68px;
-      height:68px;
-      border-radius:22px;
+      width:80px;
+      height:80px;
+      border-radius:24px;
       border:1px solid rgba(255,255,255,.18);
       background:rgba(255,255,255,.06);
       display:flex;
       align-items:center;
       justify-content:center;
-      font-size:22px;
+      font-size:24px;
       font-weight:900;
       color:#e6edf3;
       user-select:none;
@@ -322,7 +322,7 @@
 
       <div class="pill">
         <span class="kbd">Local Best</span>
-        skorların şu an sadece bu cihazda tutulur – mini app lider tahtası entegrasyonu sonradan açılacak
+        skorların şu an sadece bu cihazda tutulur – mini app lider tahtası daha sonra eklenecek
       </div>
 
       <div class="row">
@@ -427,24 +427,25 @@
     ctx.setTransform(DPR,0,0,DPR,0,0);
 
     const sidePad = 28;
-    const topPad = 105;    // daha yukarı ve daha büyük alan
-    const bottomPad = 210;
+    const topPad = 70;   // sahayı yukarı çektik
+    const bottomPad = 260; // kontroller için pay
 
     const availW = Math.max(200, W - sidePad*2);
     const availH = Math.max(200, H - topPad - bottomPad);
 
-    const base = Math.min(availW, availH);
-    CELL = base < 480 ? 16 : 20;
+    // Tahta yüksekliği, genişliğin ~1.4 katını geçmesin
+    const baseCell = (availW < 480) ? 16 : 20;
+    CELL = baseCell;
 
     COLS = Math.max(10, Math.floor(availW / CELL));
-    ROWS = Math.max(10, Math.floor(availH / CELL));
+    const maxBoardH = Math.min(availH, availW * 1.4);
+    ROWS = Math.max(10, Math.floor(maxBoardH / CELL));
 
     const boardW = COLS * CELL;
     const boardH = ROWS * CELL;
 
     OFFX = Math.floor((W - boardW)/2);
-    // 0.3 ile hafif yukarı kaydır
-    OFFY = topPad + Math.floor((availH - boardH)*0.3);
+    OFFY = topPad + Math.floor((availH - boardH)*0.05); // hafif aşağı offset
 
     if (state !== 'menu'){
       snake.forEach(s => { s.x = clamp(s.x, 0, COLS-1); s.y = clamp(s.y, 0, ROWS-1); });
@@ -588,11 +589,11 @@
     ui.echo.textContent = echoCharges;
     ui.lvl.textContent = level;
 
-    if (miniScore) miniScore.textContent = score;
-    if (miniLife)  miniLife.textContent  = lives;
-    if (miniLevel) miniLevel.textContent = level;
+    miniScore.textContent = score;
+    miniLife.textContent  = lives;
+    miniLevel.textContent = level;
 
-    if (echoLabel) echoLabel.textContent = `echo hak: ${echoCharges}`;
+    echoLabel.textContent = `echo hak: ${echoCharges}`;
 
     ui.mode.textContent = (mode==='classic') ? 'CLASSIC' : 'CASUAL';
     let extra = `bölüm ${level} • ${levelTheme()}`;
@@ -605,6 +606,9 @@
     if (nx === -dir.x && ny === -dir.y) return;
     nextDir = {x:nx,y:ny};
   }
+
+  const history = [];
+  const HISTORY_MAX = 210;
 
   function pushHistory(){
     history.push({
@@ -631,6 +635,9 @@
     const idx = Math.max(0, history.length - 1 - steps);
     return history[idx];
   }
+
+  let echoPulse = 0;
+  function pulseEcho(){ echoPulse = 1.0; }
 
   function doEcho(){
     if (state !== 'run') return;
@@ -745,6 +752,11 @@
     try{ console.log('[SnakePlay] result', payload); }catch(_){}
   }
 
+  let baseMps = 6.0;
+  let mps = 6.0;
+  let iFrames = 0;
+  let acc = 0;
+
   function onCrash(reason){
     if (iFrames > 0) return;
 
@@ -785,6 +797,10 @@
     showTip('çarpışma\n1 can gitti', 1.0);
     updateUI();
   }
+
+  let food = null;
+  let orb = null;
+  let orbTimer = 0;
 
   function resetRun(){
     score = 0;
